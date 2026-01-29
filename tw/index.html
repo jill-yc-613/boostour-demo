@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Boostour - Pro Dashboard v15.1 (Bug Fixed)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Serif+TC:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        /* --- 核心樣式 (維持 v15.0 設計) --- */
+        :root {
+            --sidebar-bg: #111827; --sidebar-hover: #1F2937;
+            --primary: #6366F1; --primary-hover: #4F46E5;
+            --bg-main: #F3F4F6; --surface: #FFFFFF;
+            --text-main: #111827; --text-secondary: #6B7280;
+            --border: #E5E7EB; --success: #10B981; --danger: #EF4444;
+            --radius: 16px; --shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06);
+            --ai-accent: #7C3AED; --ai-bg: #F5F3FF;
+        }
+        * { box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background-color: var(--bg-main); margin: 0; color: var(--text-main); display: flex; height: 100vh; overflow: hidden; }
+        
+        /* Layout */
+        aside { width: 260px; background-color: var(--sidebar-bg); color: white; display: flex; flex-direction: column; padding: 1.5rem 1rem; flex-shrink: 0; }
+        .logo-area { display: flex; align-items: center; gap: 12px; margin-bottom: 2.5rem; padding-left: 0.5rem; }
+        .logo-icon { width: 32px; height: 32px; background: linear-gradient(135deg, #6366F1, #8B5CF6); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 18px; color: white; }
+        .logo-text { font-size: 1.25rem; font-weight: 700; letter-spacing: -0.5px; }
+        
+        .main-wrapper { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        header { background: var(--surface); height: 70px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: flex-end; padding: 0 2rem; flex-shrink: 0; }
+        
+        .header-profile { display: flex; align-items: center; gap: 12px; }
+        .avatar { width: 36px; height: 36px; background: #E0E7FF; color: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 600; }
+        .user-info { font-size: 0.85rem; text-align: right; }
+        .user-role { font-size: 0.75rem; color: var(--text-secondary); }
+
+        .nav-menu { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 4px; }
+        .nav-item { padding: 12px 16px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 12px; color: #9CA3AF; font-size: 0.95rem; font-weight: 500; transition: all 0.2s; }
+        .nav-item:hover { background-color: var(--sidebar-hover); color: white; }
+        .nav-item.active { background-color: var(--sidebar-hover); color: white; font-weight: 600; border-left: 4px solid var(--primary); }
+        .nav-icon { width: 20px; height: 20px; fill: currentColor; opacity: 0.8; }
+        .sidebar-footer { margin-top: auto; padding: 1rem; background: #1F2937; border-radius: 12px; }
+        .ai-status { display: flex; align-items: center; gap: 8px; font-size: 0.8rem; color: #10B981; }
+        .status-dot { width: 8px; height: 8px; background: #10B981; border-radius: 50%; box-shadow: 0 0 8px #10B981; }
+
+        .content-scroll { flex: 1; overflow-y: auto; padding: 2rem; }
+        .view-section { display: none; animation: fadeIn 0.4s ease-out; }
+        .view-section.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* General UI */
+        .page-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; }
+        .page-title { font-size: 1.5rem; font-weight: 700; margin: 0; }
+        .page-desc { color: var(--text-secondary); font-size: 0.9rem; margin-top: 4px; }
+        .card { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); padding: 1.5rem; border: 1px solid var(--border); margin-bottom: 1.5rem; }
+
+        .btn { padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; border: none; font-size: 0.9rem; display: inline-flex; align-items: center; gap: 8px; transition: all 0.2s; white-space: nowrap; }
+        .btn-primary { background: var(--primary); color: white; box-shadow: 0 2px 4px rgba(99, 102, 241, 0.3); }
+        .btn-primary:hover { background: var(--primary-hover); transform: translateY(-1px); }
+        .btn-secondary { background: white; border: 1px solid var(--border); color: var(--text-main); }
+        .btn-secondary:hover { background: #F9FAFB; border-color: #D1D5DB; }
+        .btn-gradient { background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%); color: white; width: 100%; justify-content: center; }
+        .btn-sm { padding: 6px 12px; font-size: 0.8rem; border-radius: 6px; }
+
+        /* Table */
+        .table-container { overflow-x: auto; }
+        table { width: 100%; border-collapse: separate; border-spacing: 0; min-width: 1000px; }
+        th { text-align: left; padding: 16px; color: var(--text-secondary); font-size: 0.8rem; font-weight: 600; text-transform: uppercase; border-bottom: 1px solid var(--border); background: #F9FAFB; white-space: nowrap; }
+        td { padding: 16px; border-bottom: 1px solid var(--border); font-size: 0.9rem; vertical-align: middle; }
+        tr:hover td { background: #F9FAFB; }
+        .action-cell { white-space: nowrap; width: 1%; }
+        .action-group { display: flex; gap: 8px; flex-wrap: nowrap; }
+        .badge { padding: 4px 10px; border-radius: 99px; font-size: 0.75rem; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; }
+        .bg-green { background: #ECFDF5; color: #059669; }
+        .bg-gray { background: #F3F4F6; color: #4B5563; }
+        .bg-red { background: #FEF2F2; color: #DC2626; }
+        .bg-yellow { background: #FFFBEB; color: #D97706; }
+        .quote-risk { color: var(--danger); background: #FEF2F2; padding: 2px 8px; border-radius: 6px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; }
+
+        /* Forms */
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem; }
+        .form-group { margin-bottom: 1.5rem; }
+        .label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.5rem; color: #374151; }
+        .input-control { width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 0.95rem; outline: none; transition: border-color 0.2s; font-family: inherit; }
+        .input-control:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1); }
+        .input-readonly { background: #F3F4F6; color: #6B7280; cursor: not-allowed; }
+        
+        .tabs-container { display: flex; background: #E5E7EB; padding: 4px; border-radius: 10px; width: fit-content; margin-bottom: 2rem; }
+        .tab-btn { padding: 8px 24px; border-radius: 8px; font-weight: 600; color: #6B7280; cursor: pointer; transition: all 0.2s; user-select: none; }
+        .tab-btn.active { background: white; color: var(--primary); box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+
+        .photo-area { border: 2px dashed var(--border); padding: 1.5rem; border-radius: 12px; text-align: center; margin-top: 1rem; transition: border-color 0.2s; }
+        .photo-area:hover { border-color: var(--primary); }
+        .photo-grid { display: flex; gap: 10px; margin-top: 15px; flex-wrap: wrap; justify-content: center; }
+        .photo-thumb { width: 80px; height: 80px; object-fit: cover; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .btn-upload { background: #EFF6FF; color: var(--primary); border: 1px dashed var(--primary); padding: 6px 12px; font-size: 0.8rem; border-radius: 4px; cursor: pointer; display: inline-block; }
+
+        .input-wrapper { position: relative; }
+        .autocomplete-list { position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 50; max-height: 200px; overflow-y: auto; display: none; margin-top: 4px; }
+        .autocomplete-item { padding: 10px 12px; cursor: pointer; font-size: 0.9rem; display: flex; justify-content: space-between; align-items: center; }
+        .autocomplete-item:hover { background-color: #F3F4F6; }
+        .item-tag { font-size: 0.75rem; background: #EEF2FF; color: var(--primary); padding: 2px 6px; border-radius: 4px; }
+        .db-linked { border-color: #10B981 !important; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='%2310B981'%3E%3Cpath fill-rule='evenodd' d='M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z' clip-rule='evenodd'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; background-size: 16px; padding-right: 32px; }
+
+        /* Success & Modal */
+        .success-wrapper { max-width: 600px; margin: 4rem auto; text-align: center; }
+        .success-card-dark { background: #111827; color: white; border-radius: 20px; padding: 3rem; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2); position: relative; overflow: hidden; }
+        .success-icon-lg { font-size: 4rem; margin-bottom: 1rem; display: block; }
+        .glow { position: absolute; width: 200px; height: 200px; background: var(--primary); filter: blur(80px); opacity: 0.3; top: -50px; left: -50px; border-radius: 50%; }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 200; }
+        .modal-overlay.open { display: flex; }
+        .modal-box { background: white; width: 500px; border-radius: 12px; padding: 24px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); animation: slideUp 0.3s; }
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+        /* Modern Itinerary Doc */
+        .container-preview { max-width: 210mm; margin: 0 auto; padding: 2rem; }
+        .preview-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; background: white; padding: 1rem 1.5rem; border-radius: 12px; box-shadow: var(--shadow); }
+        .modern-doc { background: white; width: 210mm; min-height: 297mm; margin: 0 auto; padding: 20mm; box-shadow: 0 10px 30px rgba(0,0,0,0.08); border-radius: 2px; color: #333; box-sizing: border-box; position: relative; }
+        .modern-doc-header { display: flex; justify-content: space-between; align-items: flex-end; padding-bottom: 20px; border-bottom: 2px solid #111; margin-bottom: 40px; }
+        .modern-brand { font-size: 14pt; font-weight: 700; color: var(--primary); letter-spacing: 1px; text-transform: uppercase; }
+        .modern-meta { text-align: right; font-size: 9pt; color: #666; line-height: 1.4; }
+        .modern-title { font-family: 'Noto Serif TC', serif; font-size: 28pt; font-weight: 700; color: #111; margin-bottom: 10px; line-height: 1.2; }
+        .modern-subtitle { font-size: 11pt; color: #666; margin-bottom: 50px; display: flex; gap: 20px; }
+        .timeline-container { position: relative; padding-left: 20px; }
+        .timeline-line { position: absolute; left: 7px; top: 15px; bottom: 0; width: 1px; background: #e5e7eb; z-index: 0; }
+        .modern-day { position: relative; margin-bottom: 50px; z-index: 1; page-break-inside: avoid; }
+        .day-marker { display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
+        .day-dot { width: 15px; height: 15px; background: var(--primary); border-radius: 50%; border: 3px solid white; box-shadow: 0 0 0 1px #e5e7eb; }
+        .day-label { font-family: 'Noto Serif TC', serif; font-size: 18pt; font-weight: 700; color: #111; }
+        .day-image { width: 100%; height: 280px; object-fit: cover; border-radius: 8px; margin-left: 30px; margin-bottom: 20px; width: calc(100% - 30px); box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .day-content { margin-left: 30px; font-size: 11pt; line-height: 1.7; color: #444; margin-bottom: 25px; text-align: justify; }
+        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-left: 30px; }
+        .info-card { background: #FAFAFA; border: 1px solid #F0F0F0; padding: 15px; border-radius: 8px; display: flex; flex-direction: column; gap: 5px; }
+        .info-label { font-size: 8pt; color: #888; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+        .info-value { font-size: 10pt; font-weight: 500; color: #111; }
+        .info-icon { width: 14px; height: 14px; opacity: 0.6; }
+        .full-width { grid-column: 1 / -1; }
+        .modern-footer { margin-top: 60px; padding-top: 20px; border-top: 1px solid #eee; text-align: center; font-size: 9pt; color: #999; }
+
+        /* Print Override */
+        #pdf-hidden-container { display: none; }
+        @media print {
+            aside, header, .page-header, .tabs-container, .footer-actions, .preview-toolbar, .view-section, .card, .success-wrapper { display: none !important; }
+            body { background: white; margin: 0; padding: 0; overflow: visible; height: auto; display: block; }
+            .content-scroll, .main-wrapper { padding: 0; margin: 0; overflow: visible; height: auto; display: block; }
+            
+            #pdf-hidden-container { display: block !important; position: absolute; left: 0; top: 0; width: 100%; z-index: 9999; }
+            .container-preview { margin: 0; padding: 0; max-width: 100%; }
+            .modern-doc { box-shadow: none; border: none; margin: 0 auto; width: 100%; }
+            -webkit-print-color-adjust: exact; print-color-adjust: exact;
+        }
+    </style>
+</head>
+<body>
+
+<aside>
+    <div class="logo-area"><div class="logo-icon">B</div><div class="logo-text">Boostour</div></div>
+    <ul class="nav-menu">
+        <li class="nav-item active" onclick="switchView('list')">
+            <svg class="nav-icon" viewBox="0 0 24 24"><path d="M20 7.093v-5.091h-3v2.093h3zm4 5.907h-3v10h3v-10zm-5 10h-3v-16h3v16zm-5 0h-3v-12h3v12zm-5 0h-3v-8h3v8z"/></svg> 產品管理設定
+        </li>
+        <li class="nav-item">
+            <svg class="nav-icon" viewBox="0 0 24 24"><path d="M12 2c5.514 0 10 4.486 10 10s-4.486 10-10 10-10-4.486-10-10 4.486-10 10-10zm0-2c-6.627 0-12 5.373-12 12s5.373 12 12 12 12-5.373 12-12-5.373-12-12-12zm0 8c1.103 0 2 .897 2 2s-.897 2-2 2-2-.897-2-2 .897-2 2-2zm0-2c-2.209 0-4 1.791-4 4s1.791 4 4 4 4-1.791 4-4-1.791-4-4-4zm0 10c2.348 0 4.469-1.026 5.924-2.651-1.352-1.769-4.225-2.349-5.924-2.349-1.693 0-4.57.584-5.924 2.349 1.455 1.625 3.576 2.651 5.924 2.651z"/></svg> 客戶管理
+        </li>
+        <li class="nav-item">
+            <svg class="nav-icon" viewBox="0 0 24 24"><path d="M7 18c-1.104 0-2 .896-2 2s.896 2 2 2 2-.896 2-2-.896-2-2-2zm10 0c-1.104 0-2 .896-2 2s.896 2 2 2 2-.896 2-2-.896-2-2-2zm5.686-9.646l-2.67-5.354h-7.016v13h13.923l-4.237-7.646zm-8.686 5.646h-12v2h12v-2zm-3.889-14h-6.111v12h5.568c-.356-.613-.568-1.293-.568-2 0-2.209 1.791-4 4-4 .932 0 1.795.32 2.493.856l1.371-2.856h-6.753v-4z"/></svg> 訂單管理
+        </li>
+        <li class="nav-item">
+            <svg class="nav-icon" viewBox="0 0 24 24"><path d="M12 2c5.514 0 10 4.486 10 10s-4.486 10-10 10-10-4.486-10-10 4.486-10 10-10zm0-2c-6.627 0-12 5.373-12 12s5.373 12 12 12 12-5.373 12-12-5.373-12-12-12zm-3.5 13c-.828 0-1.5.671-1.5 1.5s.672 1.5 1.5 1.5 1.5-.671 1.5-1.5-.672-1.5-1.5-1.5zm7 0c-.828 0-1.5.671-1.5 1.5s.672 1.5 1.5 1.5 1.5-.671 1.5-1.5-.672-1.5-1.5-1.5zm.996-8.219l-1.281-.973-5.215 6.192 1.28.973 5.216-6.192zm-5.496 1.406l-1.92 1.6 1.281.973 1.92-1.6-1.281-.973z"/></svg> 廠商管理
+        </li>
+    </ul>
+    <div class="sidebar-footer"><div class="ai-status"><div class="status-dot"></div>Boostour AI 引擎運作中</div></div>
+</aside>
+
+<div class="main-wrapper">
+    <header>
+        <div class="header-profile"><div class="user-info"><div style="font-weight: 600;">Admin User</div><div class="user-role">超級管理員</div></div><div class="avatar">AD</div></div>
+    </header>
+
+    <div class="content-scroll">
+        
+        <div id="view-list" class="view-section active">
+            <div class="page-header">
+                <div><h1 class="page-title">產品列表</h1><div class="page-desc">管理所有旅遊商品、監控報價狀態與上架情形。</div></div>
+                <button class="btn btn-primary" onclick="switchView('add')">+ 新增旅遊行程</button>
+            </div>
+            <div class="card" style="padding: 1rem; display: flex; gap: 1rem; align-items: flex-end;">
+                <div style="flex: 1;"><label class="label">關鍵字</label><input type="text" id="filter-keyword" class="input-control" placeholder="輸入商品名稱或 ID" onkeyup="applyFilter()"></div>
+                <div style="width: 150px;"><label class="label">國家</label><select id="filter-country" class="input-control" onchange="applyFilter()"><option value="">全部</option><option value="日本">日本</option><option value="韓國">韓國</option><option value="歐洲">歐洲</option></select></div>
+                <div style="width: 150px;"><label class="label">狀態</label><select id="filter-status" class="input-control" onchange="applyFilter()"><option value="">全部</option><option value="on">上架中</option><option value="off">下架/隱藏</option></select></div>
+                <button class="btn btn-primary" onclick="applyFilter()">查詢</button>
+            </div>
+            <div class="card" style="padding: 0; overflow: hidden;">
+                <div class="table-container">
+                    <table id="product-table">
+                        <thead><tr><th width="20%">商品名稱</th><th width="12%">商品 ID</th><th width="10%">國家</th><th width="10%">城市</th><th width="8%">天數</th><th width="10%">上架狀態</th><th width="12%">報價狀態</th><th width="10%">操作</th></tr></thead>
+                        <tbody id="product-table-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div id="view-add" class="view-section">
+            <div class="page-header"><h1 class="page-title">新增旅遊行程</h1><button class="btn btn-secondary" onclick="switchView('list')">取消並返回</button></div>
+            <div class="tabs-container">
+                <div class="tab-btn active" onclick="switchTab('manual')">自訂建立</div>
+                <div class="tab-btn" onclick="switchTab('ai')">AI 快速生成</div>
+            </div>
+
+            <div id="form-manual" class="card">
+                <h3 style="margin-top: 0; margin-bottom: 1.5rem;">基礎資訊設定</h3>
+                <div class="form-row">
+                    <div class="form-group"><label class="label">商品 ID *</label><input type="text" id="manual-id" class="input-control" value="JP-MANUAL-003"></div>
+                    <div class="form-group"><label class="label">行程名稱 *</label><input type="text" id="manual-name" class="input-control" placeholder="請輸入行程名稱"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label class="label">目的地國家 *</label><select id="manual-country" class="input-control"><option>日本</option><option>韓國</option></select></div>
+                    <div class="form-group"><label class="label">目的地城市 *</label><input type="text" id="manual-city" class="input-control" placeholder="例如：大阪, 京都"></div>
+                </div>
+                <div class="form-group"><label class="label">總天數 *</label><input type="number" id="manual-days-input" class="input-control" placeholder="輸入天數 (例如 5)" min="1" max="15" oninput="renderManualDays(this.value)"></div>
+                <div id="manual-days-container"><div style="text-align: center; padding: 3rem; color: #9CA3AF; border: 2px dashed #E5E7EB; border-radius: 12px;">請在上方輸入天數，系統將展開元件輸入欄位。</div></div>
+                <div style="margin-top: 2rem; text-align: right;"><button class="btn btn-primary" onclick="goToPreview('manual')">儲存並預覽</button></div>
+            </div>
+
+            <div id="form-ai" class="card" style="display: none;">
+                <div style="background: #EEF2FF; padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; border: 1px solid #C7D2FE;">
+                    <label class="label" style="color: var(--primary);">Step 1: 匯入客戶偏好</label>
+                    <select class="input-control" onchange="toggleClientInfo(this)"><option value="">-- 請選擇客戶 --</option><option value="c1">陳大明</option><option value="c2">林小美</option></select>
+                    <div id="ai-client-tags" style="display: none; gap: 8px; margin-top: 10px;"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label class="label">商品 ID (Auto)</label><input type="text" id="ai-id" class="input-control input-readonly" value="JP-AI-AUTO-009" readonly></div>
+                    <div class="form-group"><label class="label">行程名稱</label><input type="text" id="ai-name" class="input-control" value="關西親子精選 5 日"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label class="label">國家</label><select id="ai-country" class="input-control"><option>日本</option></select></div>
+                    <div class="form-group"><label class="label">城市</label><input type="text" id="ai-city" class="input-control" value="東京, 京都, 沖繩"></div>
+                </div>
+                <div class="form-group"><label class="label">預計天數</label><input type="number" id="ai-days" class="input-control" value="5"></div>
+                <button class="btn btn-gradient btn-ai-trigger" onclick="runAIGeneration()">✨ 執行 AI 運算 (自動匹配企業資料庫)</button>
+                <div id="ai-results-container" style="margin-top: 2rem;"></div>
+                <div style="margin-top: 2rem; text-align: right; display: none;" id="ai-footer"><button class="btn btn-primary" onclick="goToPreview('ai')">確認並預覽</button></div>
+            </div>
+        </div>
+
+        <div id="view-preview" class="view-section">
+            <div class="preview-toolbar">
+                <h2 style="margin: 0; font-size: 1.25rem;">行程預覽</h2>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn btn-secondary" onclick="switchView('add')">返回編輯</button>
+                    <button class="btn btn-primary" onclick="goToSuccess()">確認並建立</button>
+                    <button class="btn btn-secondary" onclick="window.print()">🖨️ 列印</button>
+                </div>
+            </div>
+            
+            <div id="preview-doc-container"></div>
+        </div>
+
+        <div id="view-success" class="view-section">
+            <div class="success-wrapper">
+                <div class="success-card-dark">
+                    <div class="glow"></div>
+                    <div style="position: relative; z-index: 1;">
+                        <span class="success-icon-lg">🎉</span>
+                        <h2 style="font-size: 2rem; margin-bottom: 1rem;">行程建立成功！</h2>
+                        <p style="color: #9CA3AF; margin-bottom: 2rem; font-size: 1.1rem;">商品 <strong style="color:white;" id="success-name">--</strong> 已成功上架至列表。</p>
+                        <div style="display: flex; justify-content: center; gap: 1rem;">
+                            <button class="btn btn-secondary" style="background: transparent; border-color: #4B5563; color: white;" onclick="switchView('list')">返回列表</button>
+                            <button class="btn btn-primary" onclick="window.print()">下載 PDF</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="pdf-hidden-container"></div>
+
+<div id="modal-check" class="modal-overlay">
+    <div class="modal-box">
+        <h3 style="margin-top: 0; color: var(--danger);">🚨 報價異常提示</h3>
+        <p style="color: var(--text-main); line-height: 1.5;">系統偵測到 <strong>京都格蘭比亞飯店</strong> 的合約報價已於 2023/12/31 過期。</p>
+        <div style="text-align: right;"><button class="btn btn-primary" onclick="closeModal()">確認 (我知道了)</button></div>
+    </div>
+</div>
+
+<script>
+    let products = [
+        { id: 'JP-KY-2411', name: '🍁 京都賞楓 5 日深度遊', country: '日本', city: '京都, 大阪', days: 5, status: 'on', quote: 'risk' },
+        { id: 'JP-HK-2401', name: '❄️ 北海道破冰船 6 日', country: '日本', city: '札幌, 網走', days: 6, status: 'on', quote: 'ok' },
+        { id: 'GL-EU-2405', name: '🚢 歐亞跨國郵輪 15 日', country: '歐洲', city: '羅馬', days: 15, status: 'hidden', quote: 'ok' },
+        { id: 'KR-SE-2402', name: '🛍️ 首爾時尚購物 4 日', country: '韓國', city: '首爾', days: 4, status: 'on', quote: 'ok' }
+    ];
+    let tempNewProduct = null;
+
+    const resourceDB = {
+        hotel: [ { name: "東京麗思卡爾頓酒店 (The Ritz-Carlton, Tokyo)", tag: "東京 | 五星" }, { name: "東京安縵酒店 (Aman Tokyo)", tag: "東京 | 奢華" }, { name: "東京文華東方酒店 (Mandarin Oriental Tokyo)", tag: "東京 | 五星" }, { name: "大阪瑞吉酒店 (The St. Regis Osaka)", tag: "大阪 | 五星" }, { name: "大阪康萊德酒店 (Conrad Osaka)", tag: "大阪 | 五星" }, { name: "大阪洲際酒店 (InterContinental Osaka)", tag: "大阪 | 五星" }, { name: "京都柏悅酒店 (Park Hyatt Kyoto)", tag: "京都 | 奢華" }, { name: "京都麗思卡爾頓酒店 (The Ritz-Carlton Kyoto)", tag: "京都 | 五星" }, { name: "京都四季酒店 (Four Seasons Hotel Kyoto)", tag: "京都 | 五星" }, { name: "沖繩海麗客蘭尼 (Halekulani Okinawa)", tag: "沖繩 | 渡假" }, { name: "沖繩麗思卡爾頓酒店 (The Ritz-Carlton Okinawa)", tag: "沖繩 | 五星" }, { name: "虹夕諾雅 沖繩 (HOSHINOYA Okinawa)", tag: "沖繩 | 奢華" } ],
+        transport: [ { name: "包車接送 (Chartered Car)", tag: "推薦" }, { name: "新幹線 (Shinkansen)", tag: "鐵路" }, { name: "自行前往 (Self-guided)", tag: "彈性" } ],
+        activity: [ { name: "東京迪士尼快速通關 (Disney Premier Access)", tag: "東京" }, { name: "東京迪士尼專人導覽 (Disney VIP Tour)", tag: "東京" }, { name: "京都清水寺和服體驗 (Kimono Experience)", tag: "京都" }, { name: "沖繩青之洞窟潛水 (Blue Cave Diving)", tag: "沖繩" }, { name: "沖繩首里城古蹟導覽 (Shuri Castle Tour)", tag: "沖繩" }, { name: "沖繩泡盛 DIY 課程 (Awamori DIY)", tag: "沖繩" } ],
+        meal: [ { name: "數寄屋橋次郎 (Sukiyabashi Jiro)", tag: "東京 | 壽司" }, { name: "芝 豆腐屋 (Shiba Tofuya Ukai)", tag: "東京 | 豆腐" }, { name: "Azure 45", tag: "東京 | 法式" }, { name: "京料理 吉兆 (Kyoto Kitcho)", tag: "京都 | 懷石" }, { name: "琉球亭 (Ryukyu Tei)", tag: "沖繩 | 居酒屋" }, { name: "琉球之牛 (Ryukyu no Ushi)", tag: "沖繩 | 燒肉" }, { name: "飯店內用 (Hotel Dining)", tag: "標準" }, { name: "自理 (Self-arranged)", tag: "彈性" } ]
+    };
+
+    window.onload = () => renderTable(products);
+
+    function renderTable(data) {
+        const tbody = document.getElementById('product-table-body');
+        tbody.innerHTML = '';
+        if (data.length === 0) { tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding: 2rem; color: #9CA3AF;">沒有資料</td></tr>'; return; }
+        data.forEach(item => {
+            let statusBadge = item.status === 'on' ? '<span class="badge bg-green">上架中</span>' : (item.status === 'hidden' ? '<span class="badge bg-yellow">隱藏</span>' : '<span class="badge bg-gray">下架</span>');
+            let quoteBadge = item.quote === 'risk' ? '<span class="quote-risk">⚠️ 報價異常</span>' : '<span class="badge bg-gray">● 正常</span>';
+            let checkBtn = item.quote === 'risk' ? `<button class="btn btn-sm" style="background:#FEE2E2; color:#DC2626; border:1px solid #FECACA;" onclick="openModal()">檢查</button>` : '';
+            tbody.innerHTML += `<tr><td style="font-weight:600;">${item.name}</td><td style="font-family:monospace; color:var(--text-secondary);">${item.id}</td><td>${item.country}</td><td>${item.city}</td><td>${item.days}</td><td>${statusBadge}</td><td>${quoteBadge}</td><td class="action-cell"><div class="action-group"><button class="btn btn-sm btn-secondary">編輯</button>${checkBtn}</div></td></tr>`;
+        });
+    }
+
+    function applyFilter() {
+        const keyword = document.getElementById('filter-keyword').value.toLowerCase();
+        const country = document.getElementById('filter-country').value;
+        const status = document.getElementById('filter-status').value;
+        renderTable(products.filter(item => (item.name.toLowerCase().includes(keyword) || item.id.toLowerCase().includes(keyword)) && (country === '' || item.country === country) && (status === '' || (status === 'on' && item.status === 'on') || (status === 'off' && item.status !== 'on'))));
+    }
+
+    function switchView(viewName) {
+        document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+        document.getElementById('view-' + viewName).classList.add('active');
+        if(viewName === 'add') {
+            document.getElementById('manual-days-container').innerHTML = '<div style="text-align: center; padding: 3rem; color: #9CA3AF; border: 2px dashed #E5E7EB; border-radius: 12px;">請在上方輸入天數...</div>';
+            document.getElementById('manual-days-input').value = '';
+            document.getElementById('ai-results-container').innerHTML = '';
+            document.getElementById('ai-footer').style.display = 'none';
+        }
+        if(viewName === 'list') applyFilter();
+    }
+
+    function switchTab(mode) {
+        document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+        event.target.classList.add('active');
+        document.getElementById('form-manual').style.display = (mode === 'manual') ? 'block' : 'none';
+        document.getElementById('form-ai').style.display = (mode === 'ai') ? 'block' : 'none';
+    }
+
+    function setupAutocomplete(input, category) {
+        const wrapper = document.createElement('div'); wrapper.className = 'input-wrapper'; input.parentNode.insertBefore(wrapper, input); wrapper.appendChild(input);
+        const list = document.createElement('div'); list.className = 'autocomplete-list'; wrapper.appendChild(list);
+        input.addEventListener('input', function() { 
+            const val = this.value.toLowerCase(); list.innerHTML = ''; if (!val) { list.style.display = 'none'; return; }
+            const matches = resourceDB[category].filter(item => item.name.toLowerCase().includes(val));
+            if (matches.length > 0) {
+                matches.forEach(item => {
+                    const div = document.createElement('div'); div.className = 'autocomplete-item'; div.innerHTML = `<span>${item.name}</span><span class="item-tag">${item.tag}</span>`;
+                    div.addEventListener('click', function() { input.value = item.name; list.style.display = 'none'; }); list.appendChild(div);
+                });
+                list.style.display = 'block';
+            } else { list.style.display = 'none'; }
+        });
+        document.addEventListener('click', function(e) { if (!wrapper.contains(e.target)) list.style.display = 'none'; });
+    }
+
+    function renderManualDays(days) {
+        const container = document.getElementById('manual-days-container');
+        if(!days || days <= 0) { container.innerHTML = ''; return; }
+        if(days > 15) days = 15;
+        let html = ''; for(let i=1; i<=days; i++) html += generateDayBlock(i, 'manual'); container.innerHTML = html;
+        setTimeout(() => { container.querySelectorAll('.val-hotel').forEach(el => setupAutocomplete(el, 'hotel')); container.querySelectorAll('.val-transport').forEach(el => setupAutocomplete(el, 'transport')); container.querySelectorAll('.val-activity').forEach(el => setupAutocomplete(el, 'activity')); container.querySelectorAll('.val-meal-b, .val-meal-l, .val-meal-d').forEach(el => setupAutocomplete(el, 'meal')); }, 50);
+    }
+
+    function generateDayBlock(i, type, data = {}) {
+        const isAI = type === 'ai';
+        const borderCol = isAI ? '#8B5CF6' : 'var(--primary)';
+        const titleCol = isAI ? '#8B5CF6' : 'var(--primary)';
+        const inputClass = isAI ? 'input-control db-linked' : 'input-control';
+        const imgSection = isAI 
+            ? `<div class="photo-area" style="background:#F9FAFB; border-style:solid;"><div style="text-align:left; margin-bottom:10px; font-weight:600; font-size:0.85rem;">📸 行程照片</div><div class="photo-grid"><img src="${data.img}" class="photo-thumb"></div></div>`
+            : `<div class="photo-area"><div style="display:flex; justify-content:space-between; margin-bottom:10px;"><span class="label" style="margin:0;">📸 行程照片 (PDF 封面)</span></div><label class="btn btn-secondary btn-sm" style="background:#EFF6FF; border:1px dashed var(--primary); color:var(--primary);">+ 上傳照片<input type="file" multiple accept="image/*" style="display:none;" onchange="handleImageUpload(this, 'preview-m-${i}')"></label><div id="preview-m-${i}" class="photo-grid"></div></div>`;
+
+        return `<div class="card day-data-source ${type}-block" style="border-left: 4px solid ${borderCol};"><h4 style="margin-top:0; color: ${titleCol};">Day ${i}</h4>${imgSection}<div class="form-row" style="margin-top: 1.5rem;"><div class="form-group"><label class="label">🏨 住宿</label><input type="text" class="${inputClass} val-hotel" value="${data.hotel || ''}"></div><div class="form-group"><label class="label">🚗 當日交通</label><input type="text" class="${inputClass} val-transport" value="${data.transport || ''}"></div></div><div class="form-group"><label class="label">🎡 當日活動體驗</label><input type="text" class="${inputClass} val-activity" value="${data.activity || ''}" placeholder="搜尋景點 (可多選)..."></div><div class="form-group"><label class="label">📝 行程介紹</label><textarea class="${inputClass} val-content" rows="3">${data.content || ''}</textarea></div><div class="form-group"><label class="label">🍽️ 餐食</label><div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px;"><div><input type="text" class="${inputClass} val-meal-b" value="${data.meals?.b || ''}" placeholder="早餐"></div><div><input type="text" class="${inputClass} val-meal-l" value="${data.meals?.l || ''}" placeholder="午餐"></div><div><input type="text" class="${inputClass} val-meal-d" value="${data.meals?.d || ''}" placeholder="晚餐"></div></div></div></div>`;
+    }
+
+    function handleImageUpload(input, previewId) {
+        const container = document.getElementById(previewId); if (container.children.length + input.files.length > 10) { alert('最多 10 張！'); return; }
+        for(let i=0; i<input.files.length; i++) { const reader = new FileReader(); reader.onload = e => { const img = document.createElement('img'); img.src = e.target.result; img.className = 'photo-thumb'; container.appendChild(img); }; reader.readAsDataURL(input.files[i]); }
+    }
+
+    function toggleClientInfo(sel) {
+        const tagsDiv = document.getElementById('ai-client-tags');
+        if(sel.value === 'c1') {
+            tagsDiv.innerHTML = `<span class="badge bg-gray">👤 陳大明</span><span class="badge" style="background:#E0E7FF; color:var(--primary);">#親子友善</span><span class="badge" style="background:#E0E7FF; color:var(--primary);">#不吃牛</span><span class="badge" style="background:#E0E7FF; color:var(--primary);">#五星飯店</span><span class="badge" style="background:#E0E7FF; color:var(--primary);">#古蹟巡禮</span><span class="badge" style="background:#E0E7FF; color:var(--primary);">#專車接送</span>`;
+            tagsDiv.style.display = 'flex';
+        } else if(sel.value) {
+            tagsDiv.innerHTML = `<span class="badge bg-gray">👤 林小美</span><span class="badge" style="background:#E0E7FF; color:var(--primary);">#蜜月</span>`;
+            tagsDiv.style.display = 'flex';
+        } else {
+            tagsDiv.style.display = 'none';
+        }
+    }
+
+    function runAIGeneration() {
+        const btn = document.querySelector('.btn-ai-trigger');
+        const container = document.getElementById('ai-results-container');
+        btn.innerText = '🤖 AI 正在匹配企業資源庫...'; btn.style.opacity = '0.7'; container.innerHTML = '';
+        setTimeout(() => {
+            btn.innerText = '✨ 重新生成'; btn.style.opacity = '1'; document.getElementById('ai-footer').style.display = 'block';
+            const tripData = [
+                { hotel: "東京麗思卡爾頓酒店 (The Ritz-Carlton, Tokyo)", transport: "包車接送 (Chartered Car)", activity: "東京迪士尼專人導覽 (Disney VIP Tour), 購物行程", content: "專車接送至迪士尼樂園，享受全日 VIP 導覽服務。", meals: {b:"飯店內用 (Hotel Dining)", l:"園區餐廳", d:"數寄屋橋次郎 (Sukiyabashi Jiro)"}, img: "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=1200" },
+                { hotel: "東京安縵酒店 (Aman Tokyo)", transport: "新幹線 (Shinkansen)", activity: "京都清水寺和服體驗 (Kimono Experience), 漫步古街", content: "搭乘新幹線前往京都，下午體驗傳統和服並漫步古街。", meals: {b:"飯店內用 (Hotel Dining)", l:"新幹線便當", d:"京料理 吉兆 (Kyoto Kitcho)"}, img: "https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?w=1200" },
+                { hotel: "沖繩海麗客蘭尼 (Halekulani Okinawa)", transport: "包車接送 (Chartered Car)", activity: "沖繩青之洞窟潛水 (Blue Cave Diving), 海灘放鬆", content: "飛往沖繩，下午探索神秘的青之洞窟。", meals: {b:"飯店內用 (Hotel Dining)", l:"琉球亭 (Ryukyu Tei)", d:"琉球之牛 (Ryukyu no Ushi)"}, img: "https://images.unsplash.com/photo-1544550581-5f7ceaf7f992?w=1200" },
+                { hotel: "虹夕諾雅 沖繩 (HOSHINOYA Okinawa)", transport: "自行前往 (Self-guided)", activity: "沖繩泡盛 DIY 課程 (Awamori DIY), 沖繩首里城古蹟導覽 (Shuri Castle Tour)", content: "在度假村內放鬆，下午參加泡盛製作體驗。", meals: {b:"飯店內用 (Hotel Dining)", l:"自理 (Self-arranged)", d:"飯店內用 (Hotel Dining)"}, img: "https://images.unsplash.com/photo-1518548419970-58e3b4079ab2?w=1200" },
+                { hotel: "溫暖的家", transport: "包車接送 (Chartered Car)", activity: "無", content: "享受最後的度假時光，專車送機返回。", meals: {b:"飯店內用 (Hotel Dining)", l:"機上", d:"溫暖的家"}, img: "https://images.unsplash.com/photo-1436491865332-7a61a109cc05?w=1200" }
+            ];
+            let html = ''; tripData.forEach((d, i) => html += generateDayBlock(i+1, 'ai', d));
+            container.innerHTML = html;
+        }, 1000);
+    }
+
+    function goToPreview(mode) {
+        const prefix = mode === 'manual' ? 'manual' : 'ai';
+        const containerId = mode === 'manual' ? 'manual-days-container' : 'ai-results-container';
+        
+        tempNewProduct = {
+            id: document.getElementById(prefix + '-id').value,
+            name: document.getElementById(prefix + '-name').value,
+            country: document.getElementById(prefix + '-country').value || '日本',
+            city: document.getElementById(prefix + '-city').value,
+            days: document.getElementById(prefix + '-days' + (mode==='manual' ? '-input' : '')).value,
+            status: 'on', quote: 'ok'
+        };
+
+        [document.getElementById('success-name')].forEach(el => el.innerText = tempNewProduct.name);
+
+        const generateBeautifulHTML = (forPrint = false) => {
+            const dateStr = new Date().toISOString().split('T')[0];
+            let content = `
+                <div class="modern-doc">
+                    <div class="modern-doc-header">
+                        <div><div class="modern-brand">Boostour</div><div class="modern-title">${tempNewProduct.name}</div></div>
+                        <div class="modern-meta">Trip ID: ${tempNewProduct.id}<br>Created: ${dateStr}</div>
+                    </div>
+                    <div class="modern-subtitle"><span>🌍 目的地: ${tempNewProduct.country} ${tempNewProduct.city}</span><span>📅 天數: ${tempNewProduct.days} Days</span></div>
+                    <div class="timeline-container"><div class="timeline-line"></div>`;
+
+            const blocks = document.getElementById(containerId).querySelectorAll('.day-data-source');
+            blocks.forEach((block, idx) => {
+                const hotel = block.querySelector('.val-hotel').value || '尚未安排';
+                const transport = block.querySelector('.val-transport').value || '無';
+                const activity = block.querySelector('.val-activity').value || '自由活動';
+                const cont = block.querySelector('.val-content').value;
+                const mb = block.querySelector('.val-meal-b').value || '-';
+                const ml = block.querySelector('.val-meal-l').value || '-';
+                const md = block.querySelector('.val-meal-d').value || '-';
+                const imgEl = block.querySelector('.photo-thumb');
+                const imgSrc = imgEl ? imgEl.src : '';
+                const imgHtml = imgSrc ? `<img src="${imgSrc}" class="day-image">` : '';
+
+                content += `
+                <div class="modern-day">
+                    <div class="day-marker"><div class="day-dot"></div><div class="day-label">Day ${idx + 1}</div></div>
+                    ${imgHtml}
+                    <div class="day-content">${cont}</div>
+                    <div class="info-grid">
+                        <div class="info-card full-width"><span class="info-label"><svg class="info-icon" viewBox="0 0 24 24"><path fill="#666" d="M19 2H5c-1.103 0-2 .897-2 2v14a1 1 0 001 1h2v2h2v-2h8v2h2v-2h1a1 1 0 001-1V4c0-1.103-.897-2-2-2z"/></svg> 住宿 (Accommodation)</span><span class="info-value">${hotel}</span></div>
+                        <div class="info-card"><span class="info-label"><svg class="info-icon" viewBox="0 0 24 24"><path fill="#666" d="M18.92 6.01C18.72 5.42 18.16 5 17.5 5h-11c-.66 0-1.21.42-1.42 1.01L3 12v8c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-1h12v1c0 .55.45 1 1 1h1c.55 0 1-.45 1-1v-8l-2.08-5.99zM6.5 16c-.83 0-1.5-.67-1.5-1.5S5.67 13 6.5 13s1.5.67 1.5 1.5S7.33 16 6.5 16zm11 0c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5-1.5-.67 1.5-1.5 1.5zM5 11l1.5-4.5h11L19 11H5z"/></svg> 交通 (Transport)</span><span class="info-value">${transport}</span></div>
+                        <div class="info-card"><span class="info-label"><svg class="info-icon" viewBox="0 0 24 24"><path fill="#666" d="M21.41 11.58l-9-9C12.05 2.22 11.55 2 11 2H4c-1.1 0-2 .9-2 2v7c0 .55.22 1.05.59 1.42l9 9c.36.36.86.58 1.41.58.55 0 1.05-.22 1.41-.59l7-7c.37-.36.59-.86.59-1.41 0-.55-.23-1.06-.59-1.42zM5.5 7C4.67 7 4 6.33 4 5.5S4.67 4 5.5 4 7 4.67 7 5.5 6.33 7 5.5 7z"/></svg> 活動 (Activity)</span><span class="info-value">${activity}</span></div>
+                        <div class="info-card full-width"><span class="info-label"><svg class="info-icon" viewBox="0 0 24 24"><path fill="#666" d="M11 9H9V2H7v7H5V2H3v7c0 2.12 1.66 3.84 3.75 3.97V22h2.5v-9.03C11.34 12.84 13 11.12 13 9V2h-2v7zm5-3v8h2.5v8H21V2c-2.76 0-5 2.24-5 4z"/></svg> 餐食 (Meals)</span><span class="info-value">早: ${mb} / 午: ${ml} / 晚: ${md}</span></div>
+                    </div>
+                </div>`;
+            });
+
+            content += `</div><div class="modern-footer">Designed by Boostour Professional System</div></div>`;
+            return content;
+        };
+
+        document.getElementById('preview-doc-container').innerHTML = generateBeautifulHTML();
+        document.getElementById('pdf-hidden-container').innerHTML = generateBeautifulHTML(true);
+        switchView('preview');
+    }
+
+    function goToSuccess() { if(tempNewProduct) products.unshift(tempNewProduct); switchView('success'); }
+    function openModal() { document.getElementById('modal-check').classList.add('open'); }
+    function closeModal() { document.getElementById('modal-check').classList.remove('open'); }
+</script>
+
+</body>
+</html>
